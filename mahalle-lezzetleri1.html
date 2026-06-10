@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mahalle Lezzetleri</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lora:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #F26419;
+      --orange-light: #FF8C42;
+      --orange-pale: #FFF0E8;
+      --cream: #FDFAF6;
+      --brown: #3D1C02;
+      --brown-mid: #7A4419;
+      --gray: #F0EDE8;
+      --gray-mid: #C4B8AC;
+      --gray-dark: #6B6059;
+      --white: #FFFFFF;
+      --green: #2D9B5A;
+      --red: #E03131;
+      --shadow: 0 2px 16px rgba(61,28,2,0.10);
+      --shadow-sm: 0 1px 6px rgba(61,28,2,0.08);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--cream);
+      color: var(--brown);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+    }
+    /* ── SCREENS ── */
+    .screen { display: none; flex-direction: column; min-height: 100vh; }
+    .screen.active { display: flex; }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 12px;
+      background: var(--white);
+      border-bottom: 1px solid var(--gray);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-logo { font-family: 'Lora', serif; font-size: 18px; font-weight: 600; color: var(--orange); }
+    .topbar-title { font-size: 17px; font-weight: 800; color: var(--brown); }
+    .topbar-action { background: none; border: none; cursor: pointer; color: var(--orange); font-size: 22px; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      display: flex; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: var(--white); border-top: 1px solid var(--gray);
+      z-index: 200; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0 8px; background: none; border: none; cursor: pointer;
+      color: var(--gray-mid); font-size: 10px; font-family: 'Nunito', sans-serif;
+      font-weight: 700; gap: 3px; transition: color 0.2s;
+    }
+    .nav-btn.active { color: var(--orange); }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 24px; border-radius: var(--radius-sm); border: none;
+      font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 15px;
+      cursor: pointer; transition: all 0.2s; width: 100%;
+    }
+    .btn-primary { background: var(--orange); color: var(--white); }
+    .btn-primary:hover { background: var(--orange-light); }
+    .btn-secondary { background: var(--orange-pale); color: var(--orange); }
+    .btn-ghost { background: transparent; color: var(--brown-mid); border: 1.5px solid var(--gray-mid); }
+    .btn-sm { padding: 8px 16px; font-size: 13px; border-radius: 8px; width: auto; }
+    .btn-danger { background: #FFF0F0; color: var(--red); }
+
+    /* ── INPUTS ── */
+    .input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .input-label { font-size: 13px; font-weight: 700; color: var(--brown-mid); }
+    .input {
+      padding: 12px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--gray);
+      font-family: 'Nunito', sans-serif; font-size: 15px; color: var(--brown);
+      background: var(--white); outline: none; transition: border-color 0.2s; width: 100%;
+    }
+    .input:focus { border-color: var(--orange); }
+    textarea.input { resize: vertical; min-height: 80px; }
+    select.input { appearance: none; cursor: pointer; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--white); border-radius: var(--radius);
+      box-shadow: var(--shadow-sm); overflow: hidden;
+    }
+    .card-img { width: 100%; height: 180px; object-fit: cover; background: var(--gray); }
+    .card-body { padding: 14px 16px; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .badge-orange { background: var(--orange-pale); color: var(--orange); }
+    .badge-green { background: #E8F8EE; color: var(--green); }
+    .badge-gray { background: var(--gray); color: var(--gray-dark); }
+    .badge-red { background: #FFF0F0; color: var(--red); }
+
+    /* ── AUTH SCREEN ── */
+    #screen-auth {
+      background: var(--cream);
+      justify-content: center; align-items: center; padding: 40px 28px;
+    }
+    .auth-logo { text-align: center; margin-bottom: 32px; }
+    .auth-logo-icon {
+      width: 80px; height: 80px; background: var(--orange); border-radius: 24px;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+      font-size: 36px;
+    }
+    .auth-logo h1 { font-family: 'Lora', serif; font-size: 26px; font-weight: 600; color: var(--brown); }
+    .auth-logo p { font-size: 14px; color: var(--gray-dark); margin-top: 4px; }
+    .auth-card { background: var(--white); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); width: 100%; }
+    .auth-tabs { display: flex; gap: 0; margin-bottom: 24px; background: var(--gray); border-radius: 10px; padding: 3px; }
+    .auth-tab {
+      flex: 1; padding: 9px; border: none; border-radius: 8px; cursor: pointer;
+      font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 14px;
+      background: transparent; color: var(--gray-dark); transition: all 0.2s;
+    }
+    .auth-tab.active { background: var(--white); color: var(--orange); box-shadow: var(--shadow-sm); }
+
+    /* ── HOME / FEED ── */
+    #screen-home { padding-bottom: 80px; }
+    .home-header {
+      background: var(--white); padding: 16px 20px;
+      border-bottom: 1px solid var(--gray);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .location-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .location-icon { color: var(--orange); font-size: 16px; }
+    .location-text { font-size: 14px; font-weight: 700; color: var(--brown); }
+    .search-box {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--gray); border-radius: 12px; padding: 10px 14px;
+    }
+    .search-box input {
+      background: none; border: none; outline: none; flex: 1;
+      font-family: 'Nunito', sans-serif; font-size: 14px; color: var(--brown);
+    }
+    .view-toggle {
+      display: flex; gap: 6px; padding: 12px 20px;
+    }
+    .view-btn {
+      padding: 7px 16px; border-radius: 20px; border: none; cursor: pointer;
+      font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px;
+      background: var(--gray); color: var(--gray-dark); transition: all 0.2s;
+    }
+    .view-btn.active { background: var(--orange); color: var(--white); }
+    .category-row {
+      display: flex; gap: 8px; padding: 0 20px 12px; overflow-x: auto;
+    }
+    .category-row::-webkit-scrollbar { display: none; }
+    .cat-btn {
+      padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--gray);
+      cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700;
+      font-size: 12px; white-space: nowrap; background: var(--white); color: var(--brown-mid);
+      transition: all 0.2s;
+    }
+    .cat-btn.active { background: var(--orange-pale); border-color: var(--orange); color: var(--orange); }
+    .product-grid { padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
+    .product-card { cursor: pointer; transition: transform 0.15s; }
+    .product-card:active { transform: scale(0.98); }
+    .product-card .card-img { height: 200px; border-radius: var(--radius) var(--radius) 0 0; }
+    .product-card-img-placeholder {
+      width: 100%; height: 200px; background: linear-gradient(135deg, var(--orange-pale), var(--gray));
+      display: flex; align-items: center; justify-content: center; font-size: 48px;
+    }
+    .product-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .product-name { font-size: 17px; font-weight: 800; color: var(--brown); margin-bottom: 4px; }
+    .product-desc { font-size: 13px; color: var(--gray-dark); margin-bottom: 10px; line-height: 1.4; }
+    .product-price { font-size: 20px; font-weight: 900; color: var(--orange); }
+    .product-producer { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--gray); }
+    .producer-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--orange-pale);
+      display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: var(--orange);
+      flex-shrink: 0;
+    }
+    .producer-name { font-size: 13px; font-weight: 700; color: var(--brown-mid); }
+    .producer-rating { font-size: 12px; color: var(--gray-dark); }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-dark); }
+    .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state h3 { font-size: 17px; font-weight: 800; margin-bottom: 6px; color: var(--brown-mid); }
+
+    /* ── PRODUCT DETAIL ── */
+    #screen-product { padding-bottom: 100px; }
+    .product-detail-img {
+      width: 100%; height: 260px; object-fit: cover; background: var(--gray);
+    }
+    .product-detail-img-placeholder {
+      width: 100%; height: 260px; background: linear-gradient(135deg, var(--orange-pale), var(--gray));
+      display: flex; align-items: center; justify-content: center; font-size: 72px;
+    }
+    .product-detail-body { padding: 20px; }
+    .product-detail-header { margin-bottom: 16px; }
+    .product-detail-name { font-family: 'Lora', serif; font-size: 24px; font-weight: 600; color: var(--brown); margin-bottom: 8px; }
+    .product-detail-price { font-size: 28px; font-weight: 900; color: var(--orange); }
+    .product-detail-desc { font-size: 14px; color: var(--gray-dark); line-height: 1.6; margin: 16px 0; }
+    .info-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--gray); font-size: 14px; }
+    .info-icon { font-size: 18px; width: 28px; text-align: center; }
+    .info-label { color: var(--gray-dark); }
+    .info-value { font-weight: 700; color: var(--brown); margin-left: auto; }
+    .reserve-bar {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px; background: var(--white);
+      border-top: 1px solid var(--gray); padding: 16px 20px;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+
+    /* ── PRODUCER PROFILE ── */
+    #screen-producer { padding-bottom: 80px; }
+    .producer-header {
+      background: linear-gradient(160deg, var(--orange) 0%, var(--orange-light) 100%);
+      padding: 28px 20px 24px; color: var(--white);
+    }
+    .producer-header-avatar {
+      width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.3);
+      display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900;
+      margin-bottom: 12px; border: 3px solid rgba(255,255,255,0.5);
+    }
+    .producer-header-name { font-family: 'Lora', serif; font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .producer-header-city { font-size: 14px; opacity: 0.85; margin-bottom: 12px; }
+    .producer-stats { display: flex; gap: 20px; }
+    .producer-stat { text-align: center; }
+    .producer-stat-val { font-size: 20px; font-weight: 900; }
+    .producer-stat-label { font-size: 11px; opacity: 0.8; font-weight: 700; }
+    .badges-row { display: flex; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--gray); flex-wrap: wrap; }
+    .producer-about { padding: 16px 20px; border-bottom: 1px solid var(--gray); }
+    .section-title { font-size: 13px; font-weight: 800; color: var(--gray-dark); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .producer-products { padding: 16px 20px; }
+
+    /* ── RESERVATIONS ── */
+    #screen-reservations { padding-bottom: 80px; }
+    .res-list { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .res-card { background: var(--white); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); cursor: pointer; }
+    .res-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .res-card-name { font-size: 16px; font-weight: 800; color: var(--brown); }
+    .res-card-sub { font-size: 13px; color: var(--gray-dark); margin-top: 2px; }
+    .res-card-price { font-size: 17px; font-weight: 900; color: var(--orange); }
+    .res-card-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+    /* ── PROFILE ── */
+    #screen-profile { padding-bottom: 80px; }
+    .profile-header { background: var(--white); padding: 28px 20px; text-align: center; border-bottom: 1px solid var(--gray); }
+    .profile-avatar {
+      width: 80px; height: 80px; border-radius: 50%; background: var(--orange-pale);
+      display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 900;
+      color: var(--orange); margin: 0 auto 12px;
+    }
+    .profile-name { font-size: 20px; font-weight: 800; color: var(--brown); margin-bottom: 4px; }
+    .profile-email { font-size: 13px; color: var(--gray-dark); }
+    .profile-section { padding: 20px; }
+    .menu-item {
+      display: flex; align-items: center; gap: 14px; padding: 14px 0;
+      border-bottom: 1px solid var(--gray); cursor: pointer; text-decoration: none; color: var(--brown);
+    }
+    .menu-item-icon { font-size: 20px; width: 28px; text-align: center; }
+    .menu-item-text { flex: 1; font-size: 15px; font-weight: 700; }
+    .menu-item-arrow { color: var(--gray-mid); font-size: 18px; }
+
+    /* ── PRODUCER PANEL ── */
+    #screen-producer-panel { padding-bottom: 80px; }
+    .panel-tabs { display: flex; background: var(--white); border-bottom: 1px solid var(--gray); }
+    .panel-tab {
+      flex: 1; padding: 14px 0; border: none; border-bottom: 3px solid transparent;
+      cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700;
+      font-size: 13px; color: var(--gray-dark); background: none; transition: all 0.2s;
+    }
+    .panel-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .panel-content { padding: 16px; }
+
+    /* ── MESSAGES ── */
+    #screen-messages { padding-bottom: 80px; }
+    .chat-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; }
+    .chat-item {
+      display: flex; align-items: center; gap: 12px; padding: 14px 0;
+      border-bottom: 1px solid var(--gray); cursor: pointer;
+    }
+    .chat-avatar {
+      width: 48px; height: 48px; border-radius: 50%; background: var(--orange-pale);
+      display: flex; align-items: center; justify-content: center; font-weight: 800;
+      color: var(--orange); font-size: 18px; flex-shrink: 0;
+    }
+    .chat-info { flex: 1; min-width: 0; }
+    .chat-name { font-size: 15px; font-weight: 800; color: var(--brown); }
+    .chat-preview { font-size: 13px; color: var(--gray-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-time { font-size: 11px; color: var(--gray-mid); }
+    .unread-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+
+    /* ── CHAT ── */
+    #screen-chat { padding-bottom: 0; }
+    .messages-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 80px; }
+    .msg-bubble {
+      max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4;
+    }
+    .msg-bubble.sent { background: var(--orange); color: var(--white); align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg-bubble.received { background: var(--white); color: var(--brown); align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: var(--shadow-sm); }
+    .msg-time { font-size: 10px; opacity: 0.7; margin-top: 3px; text-align: right; }
+    .chat-input-bar {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px; background: var(--white);
+      border-top: 1px solid var(--gray); padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      display: flex; gap: 10px; align-items: center;
+    }
+    .chat-input {
+      flex: 1; padding: 10px 14px; border-radius: 24px; border: 1.5px solid var(--gray);
+      font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; background: var(--gray);
+    }
+    .chat-input:focus { border-color: var(--orange); background: var(--white); }
+    .chat-send-btn {
+      width: 42px; height: 42px; border-radius: 50%; background: var(--orange); border: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;
+    }
+
+    /* ── PRODUCER APPLICATION ── */
+    #screen-apply { padding-bottom: 80px; }
+    .apply-form { padding: 20px; }
+
+    /* ── ADMIN ── */
+    #screen-admin { padding-bottom: 80px; }
+    .admin-section { padding: 16px; }
+
+    /* ── MODALS ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(61,28,2,0.5);
+      z-index: 500; align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--white); border-radius: 24px 24px 0 0; padding: 24px 24px 40px;
+      width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-handle { width: 40px; height: 4px; background: var(--gray); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-title { font-family: 'Lora', serif; font-size: 20px; font-weight: 600; color: var(--brown); margin-bottom: 20px; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--brown); color: var(--white); padding: 12px 20px;
+      border-radius: 12px; font-size: 14px; font-weight: 700; z-index: 999;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+    #toast.success { background: var(--green); }
+    #toast.error { background: var(--red); }
+
+    /* ── LOADING ── */
+    .spinner {
+      display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-screen { display: flex; align-items: center; justify-content: center; flex: 1; }
+
+    /* ── PRODUCER ADD PRODUCT ── */
+    .product-limit-info { background: var(--orange-pale); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: var(--brown-mid); font-weight: 700; }
+
+    /* ── RATING STARS ── */
+    .stars { color: #F4A123; font-size: 14px; }
+    .rating-input { display: flex; gap: 8px; margin-bottom: 16px; }
+    .star-btn { font-size: 28px; cursor: pointer; background: none; border: none; color: var(--gray-mid); transition: color 0.15s; }
+    .star-btn.active { color: #F4A123; }
+
+    .back-btn {
+      background: none; border: none; cursor: pointer; padding: 4px; color: var(--brown);
+      display: flex; align-items: center; gap: 6px; font-family: 'Nunito', sans-serif;
+      font-weight: 700; font-size: 15px;
+    }
+
+    /* ── TRUST SCORE ── */
+    .trust-bar { height: 6px; background: var(--gray); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .trust-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.5s; }
+
+    /* Map placeholder */
+    .map-placeholder {
+      background: linear-gradient(135deg, #E8F4E8 0%, #D4ECD4 100%);
+      height: 300px; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px; color: var(--gray-dark); border-radius: var(--radius);
+      margin: 16px; border: 2px dashed var(--gray-mid);
+    }
+    .map-placeholder-icon { font-size: 40px; }
+    .map-placeholder-text { font-size: 14px; font-weight: 700; text-align: center; }
+    .map-producer-pins { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; }
+    .map-pin {
+      background: var(--white); border: 2px solid var(--orange); border-radius: 20px;
+      padding: 8px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer;
+      box-shadow: var(--shadow-sm); transition: all 0.2s;
+    }
+    .map-pin:active { transform: scale(0.97); }
+    .map-pin-icon { font-size: 16px; }
+    .map-pin-name { font-size: 13px; font-weight: 800; color: var(--brown); }
+    .map-pin-dist { font-size: 11px; color: var(--gray-dark); }
+  </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: AUTH
+══════════════════════════════════════ -->
+<div id="screen-auth" class="screen active">
+  <div class="auth-logo">
+    <div class="auth-logo-icon">🍽️</div>
+    <h1>Mahalle Lezzetleri</h1>
+    <p>Bugün çevremde ne pişti?</p>
+  </div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Giriş Yap</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Kayıt Ol</button>
+    </div>
+    <!-- Login -->
+    <div id="auth-login">
+      <div class="input-group">
+        <label class="input-label">E-posta</label>
+        <input type="email" id="login-email" class="input" placeholder="ornek@email.com" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">Şifre</label>
+        <input type="password" id="login-password" class="input" placeholder="••••••••" />
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">
+        <span>Giriş Yap</span>
+      </button>
+    </div>
+    <!-- Register -->
+    <div id="auth-register" style="display:none">
+      <div class="input-group">
+        <label class="input-label">Ad Soyad</label>
+        <input type="text" id="reg-name" class="input" placeholder="Adınız Soyadınız" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">E-posta</label>
+        <input type="email" id="reg-email" class="input" placeholder="ornek@email.com" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">Şifre</label>
+        <input type="password" id="reg-password" class="input" placeholder="En az 6 karakter" />
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()">
+        <span>Kayıt Ol</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: HOME (Feed + Map)
+══════════════════════════════════════ -->
+<div id="screen-home" class="screen">
+  <div class="home-header">
+    <div class="location-row">
+      <span class="location-icon">📍</span>
+      <span class="location-text" id="home-location">Konum seçiliyor...</span>
+      <span style="margin-left:auto; font-size:22px; cursor:pointer" onclick="showNotifications()">🔔</span>
+    </div>
+    <div class="search-box">
+      <span style="font-size:16px; color:var(--gray-mid)">🔍</span>
+      <input type="text" placeholder="Ürün veya üretici ara..." id="search-input" oninput="filterProducts()" />
+    </div>
+  </div>
+  <div class="view-toggle">
+    <button class="view-btn active" id="view-btn-map" onclick="switchView('map')">🗺️ Harita</button>
+    <button class="view-btn" id="view-btn-feed" onclick="switchView('feed')">📋 Akış</button>
+  </div>
+
+  <!-- Map View -->
+  <div id="map-view">
+    <div class="map-placeholder">
+      <div class="map-placeholder-icon">🗺️</div>
+      <div class="map-placeholder-text">Yakınındaki üreticiler<br>aşağıda gösteriliyor</div>
+    </div>
+    <div style="padding: 0 16px 8px; font-size:13px; font-weight:800; color:var(--gray-dark)">YAKIN ÜRETİCİLER</div>
+    <div class="map-producer-pins" id="map-pins"></div>
+  </div>
+
+  <!-- Feed View -->
+  <div id="feed-view" style="display:none">
+    <div class="category-row" id="category-row">
+      <button class="cat-btn active" onclick="filterCategory(this, '')">Tümü</button>
+      <button class="cat-btn" onclick="filterCategory(this, 'Ev Yemeği')">🍲 Ev Yemeği</button>
+      <button class="cat-btn" onclick="filterCategory(this, 'Tatlı')">🍮 Tatlı</button>
+      <button class="cat-btn" onclick="filterCategory(this, 'Hamur İşi')">🥐 Hamur İşi</button>
+      <button class="cat-btn" onclick="filterCategory(this, 'Kahvaltılık')">🥚 Kahvaltılık</button>
+      <button class="cat-btn" onclick="filterCategory(this, 'İçecek')">🧃 İçecek</button>
+      <button class="cat-btn" onclick="filterCategory(this, 'Diğer')">📦 Diğer</button>
+    </div>
+    <div class="product-grid" id="product-grid">
+      <div class="loading-screen" style="padding:40px 0"><div class="spinner" style="border-color:rgba(242,100,25,0.3); border-top-color:var(--orange)"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: PRODUCT DETAIL
+══════════════════════════════════════ -->
+<div id="screen-product" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">← Geri</button>
+    <span class="topbar-title" id="product-detail-title">Ürün Detayı</span>
+    <span></span>
+  </div>
+  <div id="product-detail-img-wrap"></div>
+  <div class="product-detail-body">
+    <div class="product-detail-header">
+      <div id="product-detail-badges" style="margin-bottom:10px"></div>
+      <div class="product-detail-name" id="product-detail-name"></div>
+      <div class="product-detail-price" id="product-detail-price"></div>
+    </div>
+    <div class="product-detail-desc" id="product-detail-desc"></div>
+    <div id="product-detail-info"></div>
+    <div style="height:1px; background:var(--gray); margin:16px 0"></div>
+    <div style="font-size:13px; font-weight:800; color:var(--gray-dark); margin-bottom:12px">ÜRETİCİ</div>
+    <div id="product-detail-producer" style="cursor:pointer" onclick="openProducerFromProduct()"></div>
+  </div>
+  <div class="reserve-bar">
+    <button class="btn btn-primary" id="reserve-btn" onclick="openReserveModal()">🛒 Rezervasyon Yap</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: PRODUCER PROFILE
+══════════════════════════════════════ -->
+<div id="screen-producer" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">← Geri</button>
+    <span class="topbar-title">Üretici Profili</span>
+    <button id="follow-btn" class="btn btn-sm btn-secondary" style="width:auto" onclick="toggleFollow()">+ Takip Et</button>
+  </div>
+  <div id="producer-profile-content"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: RESERVATIONS
+══════════════════════════════════════ -->
+<div id="screen-reservations" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">🍽️</span>
+    <span class="topbar-title">Rezervasyonlarım</span>
+    <span></span>
+  </div>
+  <div class="res-list" id="res-list">
+    <div class="loading-screen" style="padding:40px 0"><div class="spinner" style="border-color:rgba(242,100,25,0.3); border-top-color:var(--orange)"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: MESSAGES LIST
+══════════════════════════════════════ -->
+<div id="screen-messages" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">🍽️</span>
+    <span class="topbar-title">Mesajlar</span>
+    <span></span>
+  </div>
+  <div class="chat-list" id="chat-list">
+    <div class="loading-screen" style="padding:40px 0"><div class="spinner" style="border-color:rgba(242,100,25,0.3); border-top-color:var(--orange)"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: CHAT
+══════════════════════════════════════ -->
+<div id="screen-chat" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">← Geri</button>
+    <span class="topbar-title" id="chat-title">Mesaj</span>
+    <span></span>
+  </div>
+  <div class="messages-container" id="messages-container"></div>
+  <div class="chat-input-bar">
+    <input type="text" class="chat-input" id="msg-input" placeholder="Mesaj yaz..." onkeydown="if(event.key==='Enter') sendMessage()" />
+    <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: PROFILE
+══════════════════════════════════════ -->
+<div id="screen-profile" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">🍽️</span>
+    <span class="topbar-title">Profilim</span>
+    <span></span>
+  </div>
+  <div class="profile-header">
+    <div class="profile-avatar" id="profile-avatar">👤</div>
+    <div class="profile-name" id="profile-name">Yükleniyor...</div>
+    <div class="profile-email" id="profile-email"></div>
+  </div>
+  <div class="profile-section">
+    <div class="section-title">Güven Puanım</div>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px">
+      <div style="flex:1">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+          <span style="font-size:13px; color:var(--gray-dark)">Güven Skoru</span>
+          <span style="font-size:13px; font-weight:800; color:var(--green)" id="trust-score-text">5.0/10</span>
+        </div>
+        <div class="trust-bar"><div class="trust-fill" id="trust-fill" style="width:50%"></div></div>
+      </div>
+    </div>
+    <div id="profile-menu"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: PRODUCER PANEL
+══════════════════════════════════════ -->
+<div id="screen-producer-panel" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">🍽️</span>
+    <span class="topbar-title">Üretici Paneli</span>
+    <span></span>
+  </div>
+  <div class="panel-tabs">
+    <button class="panel-tab active" onclick="switchPanelTab('products')">Ürünlerim</button>
+    <button class="panel-tab" onclick="switchPanelTab('orders')">Siparişler</button>
+    <button class="panel-tab" onclick="switchPanelTab('center')">Merkez</button>
+  </div>
+  <div class="panel-content" id="panel-content"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: APPLY (Producer Application)
+══════════════════════════════════════ -->
+<div id="screen-apply" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">← Geri</button>
+    <span class="topbar-title">Üretici Başvurusu</span>
+    <span></span>
+  </div>
+  <div class="apply-form">
+    <div style="background:var(--orange-pale); border-radius:var(--radius-sm); padding:14px; margin-bottom:20px">
+      <div style="font-size:14px; font-weight:800; color:var(--brown); margin-bottom:4px">🏠 Mahalle Üreticisi Ol</div>
+      <div style="font-size:13px; color:var(--brown-mid)">Başvurun incelendikten sonra seni üretici olarak aktif edeceğiz.</div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Ad Soyad *</label>
+      <input type="text" id="apply-name" class="input" placeholder="Adınız Soyadınız" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Telefon *</label>
+      <input type="tel" id="apply-phone" class="input" placeholder="05xx xxx xx xx" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Şehir *</label>
+      <input type="text" id="apply-city" class="input" placeholder="Balıkesir" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">İlçe *</label>
+      <input type="text" id="apply-district" class="input" placeholder="Altıeylül" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Kendinizi Tanıtın *</label>
+      <textarea id="apply-about" class="input" placeholder="Ne tür yemekler yapıyorsunuz? Kaç yıldır pişiriyorsunuz?"></textarea>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Teslimat Tercihiniz *</label>
+      <select id="apply-delivery" class="input">
+        <option value="">Seçin...</option>
+        <option value="Gel Al">Gel Al</option>
+        <option value="Üretici Teslim Eder">Üretici Teslim Eder</option>
+        <option value="Buluşma Noktası">Buluşma Noktası</option>
+        <option value="Hepsi">Hepsi</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Sosyal Medya (Opsiyonel)</label>
+      <input type="text" id="apply-social" class="input" placeholder="@instagram veya facebook linki" />
+    </div>
+    <button class="btn btn-primary" onclick="submitApplication()">Başvuruyu Gönder</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: ADMIN
+══════════════════════════════════════ -->
+<div id="screen-admin" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showScreen('screen-profile')">← Geri</button>
+    <span class="topbar-title">Admin Paneli</span>
+    <span></span>
+  </div>
+  <div class="panel-tabs">
+    <button class="panel-tab active" onclick="switchAdminTab('applications')">Başvurular</button>
+    <button class="panel-tab" onclick="switchAdminTab('products')">Ürünler</button>
+    <button class="panel-tab" onclick="switchAdminTab('users')">Kullanıcılar</button>
+  </div>
+  <div id="admin-content" class="admin-section"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     BOTTOM NAV
+══════════════════════════════════════ -->
+<nav class="bottom-nav" id="bottom-nav" style="display:none">
+  <button class="nav-btn active" id="nav-home" onclick="navTo('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Keşfet
+  </button>
+  <button class="nav-btn" id="nav-reservations" onclick="navTo('reservations')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Rezervasyonlar
+  </button>
+  <button class="nav-btn" id="nav-messages" onclick="navTo('messages')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    Mesajlar
+  </button>
+  <button class="nav-btn" id="nav-profile" onclick="navTo('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profil
+  </button>
+</nav>
+
+<!-- ══════════════════════════════════════
+     MODALS
+══════════════════════════════════════ -->
+
+<!-- Reserve Modal -->
+<div class="modal-overlay" id="modal-reserve">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Rezervasyon Yap</div>
+    <div id="reserve-modal-product-info" style="margin-bottom:16px"></div>
+    <div class="input-group">
+      <label class="input-label">Adet</label>
+      <input type="number" id="reserve-quantity" class="input" value="1" min="1" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Not (Opsiyonel)</label>
+      <textarea id="reserve-note" class="input" placeholder="Üreticiye iletmek istediğiniz bir not..."></textarea>
+    </div>
+    <div style="background:var(--gray); border-radius:var(--radius-sm); padding:12px; margin-bottom:16px; font-size:13px; color:var(--gray-dark)">
+      💡 Ödeme teslimat sırasında yapılır. Online ödeme henüz aktif değil.
+    </div>
+    <button class="btn btn-primary" onclick="submitReservation()">Rezervasyon Gönder</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeModal('modal-reserve')">İptal</button>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal-overlay" id="modal-review">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Yorum Yap</div>
+    <div style="font-size:14px; color:var(--gray-dark); margin-bottom:16px">Bu teslimatı nasıl değerlendirirsiniz?</div>
+    <div class="rating-input" id="star-input">
+      <button class="star-btn" onclick="setRating(1)">★</button>
+      <button class="star-btn" onclick="setRating(2)">★</button>
+      <button class="star-btn" onclick="setRating(3)">★</button>
+      <button class="star-btn" onclick="setRating(4)">★</button>
+      <button class="star-btn" onclick="setRating(5)">★</button>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Yorumunuz</label>
+      <textarea id="review-comment" class="input" placeholder="Deneyiminizi paylaşın..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="submitReview()">Yorumu Gönder</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeModal('modal-review')">Sonra</button>
+  </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal-overlay" id="modal-add-product">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Yeni Ürün Ekle</div>
+    <div class="product-limit-info">📌 Aynı anda maksimum 2 aktif ürün yayınlayabilirsiniz.</div>
+    <div class="input-group">
+      <label class="input-label">Ürün Adı *</label>
+      <input type="text" id="new-product-name" class="input" placeholder="Örn: Ev Yapımı Mantı" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Açıklama</label>
+      <textarea id="new-product-desc" class="input" placeholder="Ürünü anlatan kısa bir açıklama..."></textarea>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Kategori *</label>
+      <select id="new-product-category" class="input">
+        <option value="">Seçin...</option>
+        <option>Ev Yemeği</option>
+        <option>Tatlı</option>
+        <option>Hamur İşi</option>
+        <option>Kahvaltılık</option>
+        <option>İçecek</option>
+        <option>Diğer</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Fiyat (₺) *</label>
+      <input type="number" id="new-product-price" class="input" placeholder="0" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Stok (Porsiyon/Adet) *</label>
+      <input type="number" id="new-product-stock" class="input" placeholder="5" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Teslim Saati</label>
+      <input type="text" id="new-product-time" class="input" placeholder="Örn: 12:00-14:00 arası" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Teslimat Şekli *</label>
+      <select id="new-product-delivery" class="input">
+        <option value="">Seçin...</option>
+        <option>Gel Al</option>
+        <option>Üretici Teslim Eder</option>
+        <option>Buluşma Noktası</option>
+      </select>
+    </div>
+    <div class="input-group" id="meeting-point-group" style="display:none">
+      <label class="input-label">Buluşma Noktası</label>
+      <input type="text" id="new-product-meeting" class="input" placeholder="Örn: Çarşı meydanı önü" />
+    </div>
+    <button class="btn btn-primary" onclick="addProduct()">Ürünü Yayınla</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeModal('modal-add-product')">İptal</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// SUPABASE INIT
+// ══════════════════════════════════════
+const SUPABASE_URL = 'https://pzigrrzdggwtuoijdflx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6aWdycnpkZ2d3dHVvaWpkZmx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4ODg3MzYsImV4cCI6MjA5NjQ2NDczNn0.a84hmzhzKheab8G_Sr1QlYRqZ8Lc2HK_6Hb002aiRa4';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let currentUser = null;
+let currentProfile = null;
+let currentProducer = null;
+let screenHistory = [];
+let allProducts = [];
+let activeCategory = '';
+let currentProduct = null;
+let currentProducerView = null;
+let currentReservation = null;
+let currentChatReservationId = null;
+let selectedRating = 0;
+let currentPanelTab = 'products';
+let currentAdminTab = 'applications';
+let isAdmin = false;
+
+// Admin emails (değiştir kendi emailin ile)
+const ADMIN_EMAILS = ['akkirman95@gmail.com'];
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+
+// ══════════════════════════════════════
+// SCREEN NAVIGATION
+// ══════════════════════════════════════
+function showScreen(id, pushHistory = true) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (pushHistory && screenHistory[screenHistory.length-1] !== id) {
+    screenHistory.push(id);
+  }
+  window.scrollTo(0, 0);
+}
+function goBack() {
+  screenHistory.pop();
+  const prev = screenHistory[screenHistory.length-1];
+  if (prev) showScreen(prev, false);
+  else showScreen('screen-home', false);
+}
+function navTo(tab) {
+  const map = { home:'screen-home', reservations:'screen-reservations', messages:'screen-messages', profile:'screen-profile' };
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-'+tab)?.classList.add('active');
+  screenHistory = [map[tab]];
+  showScreen(map[tab], false);
+  if (tab === 'home') loadProducts();
+  if (tab === 'reservations') loadReservations();
+  if (tab === 'messages') loadChats();
+  if (tab === 'profile') loadProfile();
+}
+
+// ══════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('auth-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('auth-register').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { toast('E-posta ve şifre gerekli', 'error'); return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { toast(error.message, 'error'); return; }
+  await initApp(data.user);
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!name || !email || !password) { toast('Tüm alanları doldurun', 'error'); return; }
+  if (password.length < 6) { toast('Şifre en az 6 karakter olmalı', 'error'); return; }
+  const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+  if (error) { toast(error.message, 'error'); return; }
+  toast('Kayıt başarılı! Giriş yapılıyor...', 'success');
+  setTimeout(() => doLogin(), 1000);
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  currentUser = null; currentProfile = null; currentProducer = null;
+  document.getElementById('bottom-nav').style.display = 'none';
+  showScreen('screen-auth', false);
+  screenHistory = [];
+}
+
+// ══════════════════════════════════════
+// APP INIT
+// ══════════════════════════════════════
+async function initApp(user) {
+  currentUser = user;
+  isAdmin = ADMIN_EMAILS.includes(user.email);
+
+  // Load profile
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  currentProfile = profile;
+
+  // Load producer if exists
+  const { data: producer } = await sb.from('producers').select('*').eq('user_id', user.id).single();
+  currentProducer = producer;
+
+  document.getElementById('bottom-nav').style.display = 'flex';
+  navTo('home');
+}
+
+// ══════════════════════════════════════
+// PRODUCTS - HOME
+// ══════════════════════════════════════
+async function loadProducts() {
+  const { data, error } = await sb.from('products')
+    .select('*, producers(id, display_name, city, district, avg_rating, avatar_url, user_id)')
+    .eq('status', 'active')
+    .gt('stock', 0)
+    .order('created_at', { ascending: false });
+
+  allProducts = data || [];
+  renderProducts(allProducts);
+  renderMapPins(allProducts);
+}
+
+function renderProducts(products) {
+  const grid = document.getElementById('product-grid');
+  const search = document.getElementById('search-input').value.toLowerCase();
+  let filtered = products.filter(p => {
+    const matchCat = !activeCategory || p.category === activeCategory;
+    const matchSearch = !search || p.name.toLowerCase().includes(search) ||
+      p.producers?.display_name?.toLowerCase().includes(search);
+    return matchCat && matchSearch;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🍽️</div><h3>Henüz ürün yok</h3><p>Çevrendeki üreticiler yakında ürün ekleyecek.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const emoji = categoryEmoji(p.category);
+    const producerName = p.producers?.display_name || 'Üretici';
+    const rating = p.producers?.avg_rating ? `⭐ ${parseFloat(p.producers.avg_rating).toFixed(1)}` : 'Yeni';
+    return `
+    <div class="card product-card" onclick="openProduct('${p.id}')">
+      <div class="product-card-img-placeholder">${emoji}</div>
+      <div class="card-body">
+        <div class="product-meta">
+          <span class="badge badge-orange">${p.category || 'Diğer'}</span>
+          <span class="badge badge-gray">Stok: ${p.stock}</span>
+        </div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.description || ''}</div>
+        <div style="display:flex; align-items:center; justify-content:space-between">
+          <div class="product-price">₺${p.price}</div>
+          ${p.delivery_time ? `<span style="font-size:12px; color:var(--gray-dark)">🕐 ${p.delivery_time}</span>` : ''}
+        </div>
+      </div>
+      <div class="product-producer">
+        <div class="producer-avatar">${producerName[0]}</div>
+        <div>
+          <div class="producer-name">${producerName}</div>
+          <div class="producer-rating">${rating} · ${p.delivery_type || 'Gel Al'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMapPins(products) {
+  const producers = {};
+  products.forEach(p => {
+    if (p.producers) producers[p.producers.id] = p.producers;
+  });
+  const pins = document.getElementById('map-pins');
+  const list = Object.values(producers);
+  if (!list.length) {
+    pins.innerHTML = '<div style="padding:16px; color:var(--gray-dark); font-size:13px">Yakında aktif üretici yok.</div>';
+    return;
+  }
+  pins.innerHTML = list.map(p => `
+    <div class="map-pin" onclick="openProducerProfile('${p.id}')">
+      <span class="map-pin-icon">📍</span>
+      <div>
+        <div class="map-pin-name">${p.display_name}</div>
+        <div class="map-pin-dist">${p.city}, ${p.district}</div>
+      </div>
+    </div>`).join('');
+}
+
+function filterProducts() { renderProducts(allProducts); }
+function filterCategory(el, cat) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  activeCategory = cat;
+  renderProducts(allProducts);
+}
+function switchView(v) {
+  document.getElementById('map-view').style.display = v === 'map' ? 'block' : 'none';
+  document.getElementById('feed-view').style.display = v === 'feed' ? 'block' : 'none';
+  document.getElementById('view-btn-map').classList.toggle('active', v === 'map');
+  document.getElementById('view-btn-feed').classList.toggle('active', v === 'feed');
+}
+
+function categoryEmoji(cat) {
+  const map = { 'Ev Yemeği':'🍲','Tatlı':'🍮','Hamur İşi':'🥐','Kahvaltılık':'🥚','İçecek':'🧃','Diğer':'📦' };
+  return map[cat] || '🍽️';
+}
+
+// ══════════════════════════════════════
+// PRODUCT DETAIL
+// ══════════════════════════════════════
+async function openProduct(productId) {
+  const { data: p } = await sb.from('products')
+    .select('*, producers(id, display_name, city, district, avg_rating, total_reviews, successful_deliveries, about, phone_verified, kitchen_verified)')
+    .eq('id', productId).single();
+  currentProduct = p;
+
+  document.getElementById('product-detail-title').textContent = p.name;
+  document.getElementById('product-detail-img-wrap').innerHTML =
+    `<div class="product-detail-img-placeholder">${categoryEmoji(p.category)}</div>`;
+  document.getElementById('product-detail-badges').innerHTML =
+    `<span class="badge badge-orange">${p.category||'Diğer'}</span>`;
+  document.getElementById('product-detail-name').textContent = p.name;
+  document.getElementById('product-detail-price').textContent = `₺${p.price}`;
+  document.getElementById('product-detail-desc').textContent = p.description || '';
+
+  const info = [
+    p.delivery_time ? ['🕐','Teslim Saati', p.delivery_time] : null,
+    ['🚚','Teslimat', p.delivery_type || 'Gel Al'],
+    p.meeting_point ? ['📍','Buluşma Noktası', p.meeting_point] : null,
+    ['📦','Kalan Stok', `${p.stock} adet`],
+  ].filter(Boolean);
+
+  document.getElementById('product-detail-info').innerHTML = info.map(([icon,label,val]) =>
+    `<div class="info-row"><span class="info-icon">${icon}</span><span class="info-label">${label}</span><span class="info-value">${val}</span></div>`
+  ).join('');
+
+  const prod = p.producers;
+  document.getElementById('product-detail-producer').innerHTML = prod ? `
+    <div style="display:flex; align-items:center; gap:12px; background:var(--gray); border-radius:var(--radius-sm); padding:14px">
+      <div class="producer-avatar" style="width:48px;height:48px;font-size:20px">${prod.display_name[0]}</div>
+      <div style="flex:1">
+        <div style="font-size:16px; font-weight:800; color:var(--brown)">${prod.display_name}</div>
+        <div style="font-size:13px; color:var(--gray-dark)">${prod.city}, ${prod.district}</div>
+        <div style="font-size:13px; color:var(--gray-dark)">⭐ ${prod.avg_rating||0} · ${prod.total_reviews||0} yorum</div>
+      </div>
+      <span style="color:var(--gray-mid)">›</span>
+    </div>` : '';
+
+  // Disable reserve if out of stock
+  document.getElementById('reserve-btn').disabled = p.stock <= 0;
+  document.getElementById('reserve-btn').textContent = p.stock > 0 ? '🛒 Rezervasyon Yap' : 'Stok Tükendi';
+
+  showScreen('screen-product');
+}
+
+function openProducerFromProduct() {
+  if (currentProduct?.producers?.id) openProducerProfile(currentProduct.producers.id);
+}
+
+// ══════════════════════════════════════
+// PRODUCER PROFILE
+// ══════════════════════════════════════
+async function openProducerProfile(producerId) {
+  const { data: p } = await sb.from('producers').select('*').eq('id', producerId).single();
+  currentProducerView = p;
+
+  // Check follow status
+  let isFollowing = false;
+  if (currentUser) {
+    const { data: f } = await sb.from('follows').select('*')
+      .eq('follower_id', currentUser.id).eq('producer_id', producerId).single();
+    isFollowing = !!f;
+  }
+  document.getElementById('follow-btn').textContent = isFollowing ? '✓ Takip Ediliyor' : '+ Takip Et';
+  document.getElementById('follow-btn').className = `btn btn-sm ${isFollowing ? 'btn-ghost' : 'btn-secondary'}`;
+
+  // Load producer's active products
+  const { data: products } = await sb.from('products').select('*')
+    .eq('producer_id', producerId).eq('status', 'active');
+
+  const badges = [
+    p.phone_verified ? '<span class="badge badge-green">✓ Telefon Doğrulandı</span>' : '',
+    p.kitchen_verified ? '<span class="badge badge-green">✓ Mutfak İncelendi</span>' : '',
+  ].filter(Boolean).join('') || '<span class="badge badge-gray">Henüz rozet yok</span>';
+
+  document.getElementById('producer-profile-content').innerHTML = `
+    <div class="producer-header">
+      <div class="producer-header-avatar">${p.display_name[0]}</div>
+      <div class="producer-header-name">${p.display_name}</div>
+      <div class="producer-header-city">📍 ${p.city}, ${p.district}</div>
+      <div class="producer-stats">
+        <div class="producer-stat"><div class="producer-stat-val">⭐ ${parseFloat(p.avg_rating||0).toFixed(1)}</div><div class="producer-stat-label">PUAN</div></div>
+        <div class="producer-stat"><div class="producer-stat-val">${p.successful_deliveries||0}</div><div class="producer-stat-label">TESLİMAT</div></div>
+        <div class="producer-stat"><div class="producer-stat-val">${p.follower_count||0}</div><div class="producer-stat-label">TAKİPÇİ</div></div>
+        <div class="producer-stat"><div class="producer-stat-val">${p.total_reviews||0}</div><div class="producer-stat-label">YORUM</div></div>
+      </div>
+    </div>
+    <div class="badges-row">${badges}</div>
+    ${p.about ? `<div class="producer-about"><div class="section-title">Hakkında</div><p style="font-size:14px; color:var(--gray-dark); line-height:1.6">${p.about}</p></div>` : ''}
+    <div class="producer-products">
+      <div class="section-title">Bugünkü Ürünler</div>
+      ${products?.length ? products.map(pr => `
+        <div class="card product-card" style="margin-bottom:12px" onclick="openProduct('${pr.id}')">
+          <div class="card-body">
+            <div class="product-meta"><span class="badge badge-orange">${pr.category}</span><span class="badge badge-gray">₺${pr.price}</span></div>
+            <div class="product-name">${pr.name}</div>
+            <div class="product-desc">${pr.description||''}</div>
+            <div style="font-size:12px; color:var(--gray-dark)">Stok: ${pr.stock} · ${pr.delivery_type}</div>
+          </div>
+        </div>`).join('') : '<div class="empty-state"><div class="empty-state-icon">🍽️</div><p>Bugün aktif ürün yok.</p></div>'}
+    </div>`;
+
+  showScreen('screen-producer');
+}
+
+async function toggleFollow() {
+  if (!currentProducerView) return;
+  const { data: existing } = await sb.from('follows').select('*')
+    .eq('follower_id', currentUser.id).eq('producer_id', currentProducerView.id).single();
+
+  if (existing) {
+    await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('producer_id', currentProducerView.id);
+    await sb.from('producers').update({ follower_count: Math.max(0, (currentProducerView.follower_count||0)-1) }).eq('id', currentProducerView.id);
+    toast('Takipten çıkıldı');
+    document.getElementById('follow-btn').textContent = '+ Takip Et';
+    document.getElementById('follow-btn').className = 'btn btn-sm btn-secondary';
+  } else {
+    await sb.from('follows').insert({ follower_id: currentUser.id, producer_id: currentProducerView.id });
+    await sb.from('producers').update({ follower_count: (currentProducerView.follower_count||0)+1 }).eq('id', currentProducerView.id);
+    toast('Takip edildi!', 'success');
+    document.getElementById('follow-btn').textContent = '✓ Takip Ediliyor';
+    document.getElementById('follow-btn').className = 'btn btn-sm btn-ghost';
+  }
+}
+
+// ══════════════════════════════════════
+// RESERVATIONS
+// ══════════════════════════════════════
+function openReserveModal() {
+  if (!currentProduct) return;
+  document.getElementById('reserve-modal-product-info').innerHTML = `
+    <div style="background:var(--gray); border-radius:var(--radius-sm); padding:12px; display:flex; justify-content:space-between; align-items:center">
+      <div>
+        <div style="font-weight:800; color:var(--brown)">${currentProduct.name}</div>
+        <div style="font-size:13px; color:var(--gray-dark)">${currentProduct.producers?.display_name}</div>
+      </div>
+      <div style="font-size:18px; font-weight:900; color:var(--orange)">₺${currentProduct.price}</div>
+    </div>`;
+  document.getElementById('reserve-quantity').max = currentProduct.stock;
+  openModal('modal-reserve');
+}
+
+async function submitReservation() {
+  const qty = parseInt(document.getElementById('reserve-quantity').value) || 1;
+  const note = document.getElementById('reserve-note').value;
+
+  if (qty > currentProduct.stock) { toast('Stok yetersiz', 'error'); return; }
+
+  const { error } = await sb.from('reservations').insert({
+    product_id: currentProduct.id,
+    buyer_id: currentUser.id,
+    producer_id: currentProduct.producer_id || currentProduct.producers?.id,
+    quantity: qty,
+    total_price: qty * currentProduct.price,
+    buyer_note: note,
+    status: 'pending'
+  });
+
+  if (error) { toast('Hata: ' + error.message, 'error'); return; }
+
+  toast('Rezervasyon gönderildi!', 'success');
+  closeModal('modal-reserve');
+
+  // Notify producer
+  await sb.from('notifications').insert({
+    user_id: currentProduct.producers?.user_id,
+    type: 'new_reservation',
+    title: 'Yeni Rezervasyon!',
+    body: `${currentProfile?.full_name || 'Bir kullanıcı'} "${currentProduct.name}" için rezervasyon yaptı.`,
+    related_id: currentProduct.id
+  });
+}
+
+async function loadReservations() {
+  const el = document.getElementById('res-list');
+  const { data } = await sb.from('reservations')
+    .select('*, products(name, price, category), producers(display_name)')
+    .eq('buyer_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (!data?.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><h3>Henüz rezervasyon yok</h3><p>Beğendiğin ürünlere rezervasyon yapabilirsin.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = data.map(r => {
+    const statusMap = { pending:'⏳ Bekliyor', confirmed:'✅ Onaylandı', rejected:'❌ Reddedildi', cancelled:'🚫 İptal', delivered:'📦 Teslim Edildi' };
+    const statusClass = { pending:'badge-gray', confirmed:'badge-green', rejected:'badge-red', cancelled:'badge-red', delivered:'badge-orange' };
+    const canChat = r.status === 'confirmed';
+    const canCancel = r.status === 'pending';
+    const canReview = r.status === 'delivered';
+
+    return `<div class="res-card">
+      <div class="res-card-header">
+        <div>
+          <div class="res-card-name">${r.products?.name || 'Ürün'}</div>
+          <div class="res-card-sub">${r.producers?.display_name || 'Üretici'} · ${r.quantity} adet</div>
+        </div>
+        <div>
+          <div class="res-card-price">₺${r.total_price}</div>
+          <span class="badge ${statusClass[r.status] || 'badge-gray'}" style="margin-top:4px">${statusMap[r.status] || r.status}</span>
+        </div>
+      </div>
+      <div class="res-card-actions">
+        ${canChat ? `<button class="btn btn-secondary btn-sm" onclick="openChat('${r.id}', '${r.producers?.display_name}')">💬 Mesaj</button>` : ''}
+        ${canCancel ? `<button class="btn btn-danger btn-sm" onclick="cancelReservation('${r.id}')">İptal Et</button>` : ''}
+        ${canReview ? `<button class="btn btn-secondary btn-sm" onclick="openReviewModal('${r.id}')">⭐ Yorum Yap</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function cancelReservation(reservationId) {
+  await sb.from('reservations').update({ status: 'cancelled' }).eq('id', reservationId);
+  toast('Rezervasyon iptal edildi');
+  loadReservations();
+}
+
+// ══════════════════════════════════════
+// MESSAGING
+// ══════════════════════════════════════
+async function loadChats() {
+  const el = document.getElementById('chat-list');
+  const { data } = await sb.from('reservations')
+    .select('*, products(name), producers(display_name)')
+    .or(`buyer_id.eq.${currentUser.id}`)
+    .eq('status', 'confirmed')
+    .order('updated_at', { ascending: false });
+
+  // Also include producer side
+  let producerReservations = [];
+  if (currentProducer) {
+    const { data: pd } = await sb.from('reservations')
+      .select('*, products(name), profiles!buyer_id(full_name)')
+      .eq('producer_id', currentProducer.id)
+      .eq('status', 'confirmed');
+    producerReservations = pd || [];
+  }
+
+  const allChats = [...(data||[]), ...producerReservations.filter(r => !data?.find(d => d.id === r.id))];
+
+  if (!allChats.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><h3>Henüz mesaj yok</h3><p>Rezervasyon onaylandıktan sonra mesajlaşabilirsin.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = allChats.map(r => {
+    const isProducer = currentProducer && r.producer_id === currentProducer.id;
+    const name = isProducer ? (r.profiles?.full_name || 'Müşteri') : (r.producers?.display_name || 'Üretici');
+    return `<div class="chat-item" onclick="openChat('${r.id}', '${name}')">
+      <div class="chat-avatar">${name[0]}</div>
+      <div class="chat-info">
+        <div class="chat-name">${name}</div>
+        <div class="chat-preview">${r.products?.name || 'Ürün'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openChat(reservationId, title) {
+  currentChatReservationId = reservationId;
+  document.getElementById('chat-title').textContent = title;
+  showScreen('screen-chat');
+  await loadMessages();
+}
+
+async function loadMessages() {
+  const el = document.getElementById('messages-container');
+  const { data } = await sb.from('messages')
+    .select('*').eq('reservation_id', currentChatReservationId)
+    .order('created_at', { ascending: true });
+
+  if (!data?.length) {
+    el.innerHTML = `<div style="text-align:center; color:var(--gray-mid); font-size:13px; margin-top:40px">Henüz mesaj yok. Konuşmayı sen başlat!</div>`;
+    return;
+  }
+  el.innerHTML = data.map(m => {
+    const isMine = m.sender_id === currentUser.id;
+    const time = new Date(m.created_at).toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+    return `<div class="msg-bubble ${isMine ? 'sent' : 'received'}">
+      ${m.content}
+      <div class="msg-time">${time}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const content = input.value.trim();
+  if (!content) return;
+  input.value = '';
+  await sb.from('messages').insert({
+    reservation_id: currentChatReservationId,
+    sender_id: currentUser.id,
+    content
+  });
+  await loadMessages();
+}
+
+// ══════════════════════════════════════
+// PROFILE
+// ══════════════════════════════════════
+async function loadProfile() {
+  const { data: p } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  currentProfile = p;
+
+  document.getElementById('profile-avatar').textContent = p?.full_name?.[0]?.toUpperCase() || '👤';
+  document.getElementById('profile-name').textContent = p?.full_name || 'Kullanıcı';
+  document.getElementById('profile-email').textContent = currentUser.email;
+
+  const trust = p?.trust_score || 5;
+  document.getElementById('trust-score-text').textContent = `${trust}/10`;
+  document.getElementById('trust-fill').style.width = `${trust * 10}%`;
+
+  const menu = [];
+  if (currentProducer) {
+    menu.push({ icon:'🏪', text:'Üretici Panelim', action:"navToProducerPanel()" });
+  } else {
+    menu.push({ icon:'🍳', text:'Üretici Ol', action:"showScreen('screen-apply')" });
+  }
+  if (isAdmin) {
+    menu.push({ icon:'⚙️', text:'Admin Paneli', action:"openAdmin()" });
+  }
+  menu.push({ icon:'📋', text:'Geçmiş Siparişlerim', action:"navTo('reservations')" });
+  menu.push({ icon:'🚪', text:'Çıkış Yap', action:"doLogout()" });
+
+  document.getElementById('profile-menu').innerHTML = menu.map(m =>
+    `<div class="menu-item" onclick="${m.action}">
+      <span class="menu-item-icon">${m.icon}</span>
+      <span class="menu-item-text">${m.text}</span>
+      <span class="menu-item-arrow">›</span>
+    </div>`
+  ).join('');
+}
+
+// ══════════════════════════════════════
+// PRODUCER APPLICATION
+// ══════════════════════════════════════
+async function submitApplication() {
+  const name = document.getElementById('apply-name').value.trim();
+  const phone = document.getElementById('apply-phone').value.trim();
+  const city = document.getElementById('apply-city').value.trim();
+  const district = document.getElementById('apply-district').value.trim();
+  const about = document.getElementById('apply-about').value.trim();
+  const delivery = document.getElementById('apply-delivery').value;
+  const social = document.getElementById('apply-social').value.trim();
+
+  if (!name || !phone || !city || !district || !about || !delivery) {
+    toast('Lütfen zorunlu alanları doldurun', 'error'); return;
+  }
+
+  const { error } = await sb.from('producer_applications').insert({
+    user_id: currentUser.id, full_name: name, phone, city, district,
+    about, delivery_preference: delivery, social_media: social
+  });
+
+  if (error) { toast('Hata: ' + error.message, 'error'); return; }
+  toast('Başvurunuz gönderildi! İnceleme sonucu size bildirilecek.', 'success');
+  goBack();
+}
+
+// ══════════════════════════════════════
+// PRODUCER PANEL
+// ══════════════════════════════════════
+function navToProducerPanel() {
+  showScreen('screen-producer-panel');
+  switchPanelTab('products');
+}
+
+function switchPanelTab(tab) {
+  currentPanelTab = tab;
+  document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#screen-producer-panel .panel-tab')[['products','orders','center'].indexOf(tab)]?.classList.add('active');
+  if (tab === 'products') loadProducerProducts();
+  if (tab === 'orders') loadProducerOrders();
+  if (tab === 'center') loadProducerCenter();
+}
+
+async function loadProducerProducts() {
+  const el = document.getElementById('panel-content');
+  if (!currentProducer) { el.innerHTML = '<div class="empty-state"><p>Üretici profiliniz bulunamadı.</p></div>'; return; }
+
+  const { data } = await sb.from('products').select('*')
+    .eq('producer_id', currentProducer.id)
+    .order('created_at', { ascending: false });
+
+  const active = data?.filter(p => p.status === 'active') || [];
+  const canAdd = active.length < 2;
+
+  el.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
+      <div style="font-size:13px; color:var(--gray-dark); font-weight:700">Aktif: ${active.length}/2</div>
+      ${canAdd ? `<button class="btn btn-primary btn-sm" onclick="openAddProductModal()">+ Yeni Ürün</button>` : '<span class="badge badge-gray">Limit doldu</span>'}
+    </div>
+    ${data?.length ? data.map(p => `
+      <div class="card" style="margin-bottom:12px; padding:14px">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-weight:800; font-size:15px; color:var(--brown)">${p.name}</div>
+            <div style="font-size:13px; color:var(--gray-dark)">${p.category} · ₺${p.price} · Stok: ${p.stock}</div>
+          </div>
+          <span class="badge ${p.status==='active'?'badge-green':p.status==='draft'?'badge-gray':'badge-red'}">${p.status==='active'?'Aktif':p.status==='draft'?'Taslak':'Arşiv'}</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px">
+          ${p.status === 'active' ? `<button class="btn btn-danger btn-sm" onclick="archiveProduct('${p.id}')">Arşivle</button>` : ''}
+          ${p.status === 'draft' ? `<button class="btn btn-primary btn-sm" onclick="publishProduct('${p.id}')">Yayınla</button>` : ''}
+        </div>
+      </div>`).join('') : '<div class="empty-state"><div class="empty-state-icon">🍽️</div><h3>Henüz ürün yok</h3><p>İlk ürününü ekle!</p></div>'}`;
+}
+
+async function loadProducerOrders() {
+  const el = document.getElementById('panel-content');
+  if (!currentProducer) return;
+  const { data } = await sb.from('reservations')
+    .select('*, products(name), profiles!buyer_id(full_name, trust_score, successful_deliveries, missed_reservations)')
+    .eq('producer_id', currentProducer.id)
+    .order('created_at', { ascending: false });
+
+  if (!data?.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><h3>Henüz sipariş yok</h3></div>`;
+    return;
+  }
+
+  el.innerHTML = data.map(r => {
+    const buyer = r.profiles;
+    const statusMap = { pending:'⏳ Bekliyor', confirmed:'✅ Onaylandı', rejected:'❌ Reddedildi', cancelled:'🚫 İptal', delivered:'📦 Teslim' };
+    return `<div class="res-card" style="margin-bottom:12px">
+      <div class="res-card-header">
+        <div>
+          <div class="res-card-name">${r.products?.name}</div>
+          <div class="res-card-sub">👤 ${buyer?.full_name || 'Müşteri'} · ${r.quantity} adet</div>
+          <div style="font-size:12px; color:var(--gray-dark); margin-top:4px">
+            Güven: ${buyer?.trust_score||5}/10 · ✓${buyer?.successful_deliveries||0} · ✗${buyer?.missed_reservations||0}
+          </div>
+          ${r.buyer_note ? `<div style="font-size:12px; color:var(--brown-mid); margin-top:4px; font-style:italic">"${r.buyer_note}"</div>` : ''}
+        </div>
+        <div>
+          <div class="res-card-price">₺${r.total_price}</div>
+          <span class="badge badge-gray" style="margin-top:4px; font-size:10px">${statusMap[r.status]}</span>
+        </div>
+      </div>
+      <div class="res-card-actions">
+        ${r.status === 'pending' ? `
+          <button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${r.id}', 'confirmed')">✓ Onayla</button>
+          <button class="btn btn-danger btn-sm" onclick="updateOrderStatus('${r.id}', 'rejected')">✗ Reddet</button>` : ''}
+        ${r.status === 'confirmed' ? `
+          <button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${r.id}', 'delivered')">📦 Teslim Edildi</button>
+          <button class="btn btn-secondary btn-sm" onclick="openChat('${r.id}', '${buyer?.full_name||'Müşteri'}')">💬 Mesaj</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateOrderStatus(reservationId, status) {
+  await sb.from('reservations').update({ status, updated_at: new Date().toISOString() }).eq('id', reservationId);
+  if (status === 'delivered' && currentProducer) {
+    await sb.from('producers').update({ successful_deliveries: (currentProducer.successful_deliveries||0)+1 }).eq('id', currentProducer.id);
+  }
+  toast(status === 'confirmed' ? 'Onaylandı!' : status === 'rejected' ? 'Reddedildi' : 'Teslim edildi olarak işaretlendi', 'success');
+  loadProducerOrders();
+}
+
+function loadProducerCenter() {
+  const el = document.getElementById('panel-content');
+  el.innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:16px; font-weight:800; color:var(--brown); margin-bottom:4px">📚 Üretici Merkezi</div>
+      <div style="font-size:13px; color:var(--gray-dark)">Daha iyi bir üretici olmak için rehberler</div>
+    </div>
+    ${[
+      { icon:'📸', title:'Ürün Fotoğrafı Rehberi', desc:'Müşterilerin dikkatini çeken fotoğraflar nasıl çekilir?' },
+      { icon:'📦', title:'Paketleme Rehberi', desc:'Gıda güvenliğine uygun paketleme nasıl yapılır?' },
+      { icon:'🚚', title:'Teslimat Rehberi', desc:'Sorunsuz teslimalar için ipuçları' },
+      { icon:'⭐', title:'Müşteri Memnuniyeti', desc:'5 yıldızlı yorumlar için ne yapmalısınız?' },
+    ].map(c => `
+      <div class="card" style="margin-bottom:10px; padding:16px; display:flex; align-items:center; gap:14px">
+        <div style="font-size:28px">${c.icon}</div>
+        <div>
+          <div style="font-weight:800; font-size:14px; color:var(--brown)">${c.title}</div>
+          <div style="font-size:12px; color:var(--gray-dark); margin-top:2px">${c.desc}</div>
+        </div>
+        <span style="margin-left:auto; color:var(--gray-mid)">›</span>
+      </div>`).join('')}`;
+}
+
+function openAddProductModal() {
+  document.getElementById('new-product-delivery').onchange = function() {
+    document.getElementById('meeting-point-group').style.display = this.value === 'Buluşma Noktası' ? 'flex' : 'none';
+  };
+  openModal('modal-add-product');
+}
+
+async function addProduct() {
+  const name = document.getElementById('new-product-name').value.trim();
+  const desc = document.getElementById('new-product-desc').value.trim();
+  const cat = document.getElementById('new-product-category').value;
+  const price = parseFloat(document.getElementById('new-product-price').value);
+  const stock = parseInt(document.getElementById('new-product-stock').value);
+  const time = document.getElementById('new-product-time').value.trim();
+  const delivery = document.getElementById('new-product-delivery').value;
+  const meeting = document.getElementById('new-product-meeting').value.trim();
+
+  if (!name || !cat || !price || !stock || !delivery) { toast('Zorunlu alanları doldurun', 'error'); return; }
+
+  const { error } = await sb.from('products').insert({
+    producer_id: currentProducer.id, name, description: desc, category: cat,
+    price, stock, delivery_time: time, delivery_type: delivery,
+    meeting_point: meeting || null, status: 'active'
+  });
+
+  if (error) { toast('Hata: ' + error.message, 'error'); return; }
+  toast('Ürün yayınlandı!', 'success');
+  closeModal('modal-add-product');
+  loadProducerProducts();
+}
+
+async function archiveProduct(id) {
+  await sb.from('products').update({ status: 'archived' }).eq('id', id);
+  toast('Ürün arşivlendi');
+  loadProducerProducts();
+}
+
+async function publishProduct(id) {
+  await sb.from('products').update({ status: 'active' }).eq('id', id);
+  toast('Ürün yayınlandı!', 'success');
+  loadProducerProducts();
+}
+
+// ══════════════════════════════════════
+// REVIEWS
+// ══════════════════════════════════════
+function openReviewModal(reservationId) {
+  currentReservation = reservationId;
+  selectedRating = 0;
+  document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
+  openModal('modal-review');
+}
+
+function setRating(r) {
+  selectedRating = r;
+  document.querySelectorAll('.star-btn').forEach((b, i) => b.classList.toggle('active', i < r));
+}
+
+async function submitReview() {
+  if (!selectedRating) { toast('Lütfen puan verin', 'error'); return; }
+  const comment = document.getElementById('review-comment').value.trim();
+  const { data: res } = await sb.from('reservations').select('producer_id').eq('id', currentReservation).single();
+
+  const { error } = await sb.from('reviews').insert({
+    reservation_id: currentReservation, reviewer_id: currentUser.id,
+    producer_id: res.producer_id, rating: selectedRating, comment
+  });
+  if (error) { toast('Zaten yorum yaptınız', 'error'); return; }
+
+  // Update producer avg rating
+  const { data: reviews } = await sb.from('reviews').select('rating').eq('producer_id', res.producer_id);
+  if (reviews?.length) {
+    const avg = reviews.reduce((a, r) => a + r.rating, 0) / reviews.length;
+    await sb.from('producers').update({ avg_rating: avg, total_reviews: reviews.length }).eq('id', res.producer_id);
+  }
+
+  toast('Yorumunuz eklendi!', 'success');
+  closeModal('modal-review');
+  loadReservations();
+}
+
+// ══════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════
+function openAdmin() {
+  showScreen('screen-admin');
+  switchAdminTab('applications');
+}
+
+function switchAdminTab(tab) {
+  currentAdminTab = tab;
+  document.querySelectorAll('#screen-admin .panel-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#screen-admin .panel-tab')[['applications','products','users'].indexOf(tab)]?.classList.add('active');
+  if (tab === 'applications') loadAdminApplications();
+  if (tab === 'products') loadAdminProducts();
+  if (tab === 'users') loadAdminUsers();
+}
+
+async function loadAdminApplications() {
+  const el = document.getElementById('admin-content');
+  const { data } = await sb.from('producer_applications').select('*, profiles(full_name)').order('created_at', { ascending: false });
+
+  if (!data?.length) { el.innerHTML = '<div class="empty-state"><p>Başvuru yok.</p></div>'; return; }
+
+  el.innerHTML = data.map(a => `
+    <div class="card" style="margin-bottom:12px; padding:16px">
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+        <div style="font-weight:800; font-size:15px">${a.full_name}</div>
+        <span class="badge ${a.status==='pending'?'badge-gray':a.status==='approved'?'badge-green':'badge-red'}">${a.status==='pending'?'Bekliyor':a.status==='approved'?'Onaylı':'Reddedildi'}</span>
+      </div>
+      <div style="font-size:13px; color:var(--gray-dark)">📍 ${a.city}, ${a.district}</div>
+      <div style="font-size:13px; color:var(--gray-dark)">📞 ${a.phone}</div>
+      <div style="font-size:13px; color:var(--gray-dark); margin-top:6px">${a.about || ''}</div>
+      ${a.status === 'pending' ? `
+        <div style="display:flex; gap:8px; margin-top:12px">
+          <button class="btn btn-primary btn-sm" onclick="approveApplication('${a.id}', '${a.user_id}', '${a.full_name}', '${a.city}', '${a.district}', '${a.about||''}', '${a.delivery_preference||''}')">✓ Onayla</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectApplication('${a.id}')">✗ Reddet</button>
+        </div>` : ''}
+    </div>`).join('');
+}
+
+async function approveApplication(id, userId, name, city, district, about, delivery) {
+  // Create producer profile
+  await sb.from('producers').insert({
+    user_id: userId, display_name: name, city, district, about, is_active: true
+  });
+  // Update application
+  await sb.from('producer_applications').update({ status: 'approved' }).eq('id', id);
+  // Update user profile
+  await sb.from('profiles').update({ is_producer: true }).eq('id', userId);
+  // Notify user
+  await sb.from('notifications').insert({
+    user_id: userId, type: 'application_approved', title: 'Başvurunuz Onaylandı! 🎉',
+    body: 'Artık ürün ekleyebilir ve satış yapabilirsiniz.'
+  });
+  toast('Üretici onaylandı!', 'success');
+  loadAdminApplications();
+}
+
+async function rejectApplication(id) {
+  await sb.from('producer_applications').update({ status: 'rejected' }).eq('id', id);
+  toast('Başvuru reddedildi');
+  loadAdminApplications();
+}
+
+async function loadAdminProducts() {
+  const el = document.getElementById('admin-content');
+  const { data } = await sb.from('products').select('*, producers(display_name)').order('created_at', { ascending: false });
+  if (!data?.length) { el.innerHTML = '<div class="empty-state"><p>Ürün yok.</p></div>'; return; }
+  el.innerHTML = data.map(p => `
+    <div class="card" style="margin-bottom:10px; padding:14px">
+      <div style="display:flex; justify-content:space-between">
+        <div>
+          <div style="font-weight:800">${p.name}</div>
+          <div style="font-size:12px; color:var(--gray-dark)">${p.producers?.display_name} · ₺${p.price} · ${p.category}</div>
+        </div>
+        <span class="badge ${p.status==='active'?'badge-green':'badge-gray'}">${p.status}</span>
+      </div>
+      ${p.status === 'active' ? `<button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="adminArchiveProduct('${p.id}')">Pasife Al</button>` : ''}
+    </div>`).join('');
+}
+
+async function adminArchiveProduct(id) {
+  await sb.from('products').update({ status: 'archived' }).eq('id', id);
+  toast('Ürün pasife alındı');
+  loadAdminProducts();
+}
+
+async function loadAdminUsers() {
+  const el = document.getElementById('admin-content');
+  const { data } = await sb.from('profiles').select('*').order('created_at', { ascending: false });
+  if (!data?.length) { el.innerHTML = '<div class="empty-state"><p>Kullanıcı yok.</p></div>'; return; }
+  el.innerHTML = data.map(u => `
+    <div class="card" style="margin-bottom:10px; padding:14px; display:flex; align-items:center; gap:12px">
+      <div class="producer-avatar">${u.full_name?.[0]||'?'}</div>
+      <div style="flex:1">
+        <div style="font-weight:800">${u.full_name||'İsimsiz'}</div>
+        <div style="font-size:12px; color:var(--gray-dark)">Güven: ${u.trust_score||5}/10 · ${u.is_producer?'🏪 Üretici':'👤 Kullanıcı'}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+  document.body.style.overflow = '';
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+});
+
+function showNotifications() {
+  toast('Bildirimler yakında eklenecek');
+}
+
+// ══════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await initApp(session.user);
+  }
+  // Auth state listener
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      // handled by initApp
+    }
+  });
+}
+
+boot();
+
+// Update location text
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('home-location').textContent = 'Konumun yakınında';
+  }, () => {
+    document.getElementById('home-location').textContent = 'Türkiye';
+  });
+}
+</script>
+</body>
+</html>
